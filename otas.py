@@ -5,6 +5,10 @@ import serial   #robotik bağlantısı için bu lazım
 from PIL import Image, ImageTk # videoları gife çevirdim pillow ile oynatıcam
 import threading # muhtemelen sensorleri bağladığımız zaman readlineda kod takılabilir bu yüzden ekledim
 import time 
+from CTkMessagebox import CTkMessagebox 
+
+
+global arduino_state
 
 #sqllite connection
 connection=sqlite3.connect("kimlik.db")
@@ -20,9 +24,11 @@ for i in veriler:
 try:
     arduino = serial.Serial("COM7", 9600, timeout=1)
     print("Arduino bağlandı")
+    arduino_state=True
 except Exception as e:
     arduino = None
     print("Arduino bulunamadı:", e)
+    arduino_state=False
     
 pencere = ctk.CTk()
 pencere.title("OTAS")
@@ -43,6 +49,40 @@ pencere.geometry(f"{pencere_genislik}x{pencere_yukseklik}+{x}+{y}") # kod şuna 
 #pencere ayarlamassı kısmı yukarda
 
 #aşşağı kısımda buton fonksiyonları bulunacak backend kısmı burası
+
+baglantı = None
+doktor_durum_bolean=None
+
+def check_doc():
+    global baglantı
+    global doktor_durum_bolean
+    while True:
+        try:
+            if baglantı is None:
+                baglantı=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                baglantı.connect(("127.0.0.1",5000))
+                doktor_durum_bolean=True
+                pencere.after(0,lambda: doktor_durum_label.configure(text="DOKTOR BAĞLANDI",fg_color="green"))
+                baglantı.send("baglantı basarılı lütfen veri icin bekle".encode("utf-8"))
+                print(baglantı.recv(16384).decode("utf-8"))
+                baglantı.send(b"PING")
+                baglantı.recv(16384).decode("utf-8")
+                time.sleep(5)
+        except:
+            baglantı=None
+            doktor_durum_bolean=False
+            baglantı = None
+            pencere.after(0,lambda: doktor_durum_label.configure(text="DOKTOR BAĞLI DEGIL",fg_color="red"))
+            time.sleep(5)
+            
+    
+
+
+
+
+
+
+
 
 def tcButtonClick():
 
@@ -84,7 +124,7 @@ def olcumButtonClick():
 def gogus():
     sayfayıtemizle()
 
-    from CTkMessagebox import CTkMessagebox #adetim değildir ama bazen fonksiyon içine library ekliom
+    
 
     #soru1--------------------------------------------------------------------
     cevap = CTkMessagebox(
@@ -100,6 +140,10 @@ def gogus():
         sayfayıtemizle()
         evetlabel=ctk.CTkLabel(pencere,text="HEMEEN KOŞ DOKTURUN YANINA ",width=100,height=60) #burdan sonra socket ile doktora haber verip ana menüye back sağlıcaz socket şimdilik kalsın
         evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        try:
+            baglantı.send("GOGUS".encode("utf-8"))
+        except Exception as e:
+            print(e)
         pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) #ana menüye dönsün die, time.sleep kullanırsak mainthread donuyo ve bozuluyo ctk içinde olan after fonsiyonunu kullanıcaz
         return
     else:
@@ -174,11 +218,124 @@ def gogus():
 
     #soru4-----------------------------------------------------------------------------
     
+
+
+
 def bilinc():
-    pass
+    sayfayıtemizle()
+
+#soru1-----------------------------------------------------------------------------------
+    cevap = CTkMessagebox(
+        title="Soru",
+        message="vucutun bir bolgesinde(ya okuyamıyom bunu yazarız sonra)?",
+        icon="question",
+        option_1="Evet",
+        option_2="Hayır",
+    ).get()
+
+    if cevap=="Evet":
+        print("evet")
+        sayfayıtemizle()
+        evetlabel=ctk.CTkLabel(pencere,text="HEMEEN KOŞ DOKTURUN YANINA ",width=100,height=60) 
+        evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) 
+        return
+    else:
+        print("hayır")
+#soru1-----------------------------------------------------------------------------------
+
+#soru2-----------------------------------------------------------------------------------
+
+    cevap = CTkMessagebox(
+        title="Soru",
+        message="yüz mimikleri falan filan?",
+        icon="question",
+        option_1="Evet",
+        option_2="Hayır",
+    ).get()
+
+    if cevap=="Evet":
+        print("evet")
+        sayfayıtemizle()
+        evetlabel=ctk.CTkLabel(pencere,text="HEMEEN KOŞ DOKTURUN YANINA ",width=100,height=60) 
+        evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) 
+        return
+    else:
+        print("hayır") #sanırım burasıda son soru o yüzden hicbiri fonk cagırcaz.
+        hicbiri()
+#soru2-----------------------------------------------------------------------------------
+
 
 def alerjik():
-    pass
+    sayfayıtemizle()
+
+
+    #soru1-----------------------------------------------------------------------------------
+    cevap = CTkMessagebox(
+        title="Soru",
+        message="ağrı kasıntı zorluk falan filan",
+        icon="question",
+        option_1="Evet",
+        option_2="Hayır",
+    ).get()
+
+    if cevap=="Evet":
+        print("evet")
+        sayfayıtemizle()
+        evetlabel=ctk.CTkLabel(pencere,text="HEMEEN KOŞ DOKTURUN YANINA ",width=100,height=60) 
+        evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) 
+        return
+    else:
+        print("hayır")
+#soru1-----------------------------------------------------------------------------------
+
+
+#soru2-----------------------------------------------------------------------------------
+    cevap = CTkMessagebox(
+        title="Soru",
+        message="kabarlıklık gibi bişey?",
+        icon="question",
+        option_1="Evet",
+        option_2="Hayır",
+    ).get()
+
+    if cevap=="Evet":
+        print("evet")
+        sayfayıtemizle()
+        evetlabel=ctk.CTkLabel(pencere,text="HEMEEN KOŞ DOKTURUN YANINA ",width=100,height=60) 
+        evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) 
+        return
+    else:
+        print("hayır")
+#soru2-----------------------------------------------------------------------------------
+
+
+#soru3-----------------------------------------------------------------------------------
+    cevap = CTkMessagebox(
+        title="Soru",
+        message="diğer belirtiler varmı ",          #BURDA DİĞER KISMINI SORU HALİNDE DEĞİLDE BAŞKA TÜRLÜ YAPABİLİRİZ
+        icon="question",
+        option_1="Evet",
+        option_2="Hayır",
+    ).get()
+
+    if cevap=="Evet":
+        print("evet")
+        sayfayıtemizle()
+        evetlabel=ctk.CTkLabel(pencere,text="LÜTFEN DANIŞMAYA BAŞVURUN ",width=100,height=60,bg_color="red") 
+        evetlabel.place(rely=0.5,relx=0.5,anchor="center")
+        pencere.after(3000,lambda:(sayfayıtemizle(),sayfa1())) 
+        return
+    else:
+        print("hayır")
+        hicbiri()
+#soru3-----------------------------------------------------------------------------------
+
+
+
 
 def hicbiri():
     sayfayıtemizle()
@@ -242,6 +399,32 @@ def gif_oynat(gif_yolu, label):   # bu fonksiyonu ai yazdı o yüzden commitim y
 
 
 def  sayfa1():
+   
+    
+
+    #arduino bağlantısı check
+    if arduino_state==True:
+        CTkMessagebox(
+        title="Uyarı",
+        message="ARDUİNO BAĞLANTISI GERÇEKLEŞTİ.",
+        icon="info"
+)   
+    else:
+        CTkMessagebox(
+        title="Uyarı",
+        message="arduino BAĞLANAMADI.",
+        icon="warning"
+)
+        
+    
+  
+ 
+
+
+
+    
+
+
     arka_plan = ctk.CTkImage(           #sağlık bakanlığı logosu yerleşimi
     light_image=Image.open("arkaplan.png"),
     dark_image=Image.open("arkaplan.png"),
@@ -256,7 +439,19 @@ def  sayfa1():
 
     arka_plan_label.place(x=0, y=0, relwidth=1, relheight=1)
 
+    global doktor_durum_label
+    doktor_durum_label=ctk.CTkLabel(pencere,text="DOKTOR BAĞLI DEĞİL", fg_color="red",bg_color="cyan",width=62,height=30)
+    doktor_durum_label.place(relx=0.91,rely=0.06,anchor="sw")
+    
+    
 
+    if doktor_durum_bolean==True:
+        doktor_durum_label.configure(text="DOKTOR BAĞLANDI",fg_color="green")
+    else:
+        pass
+
+    #socket ile doktor bağlantısı check(burda her 5 saniyede bir doktora req atarak connection arıyacaz sağ üst kısımda doktor bağlantısı kontrol edilecek)
+    #thread1.start() # check_doc fonksiyonunu threadler
 
 
 
@@ -271,8 +466,7 @@ def  sayfa1():
     tcButton=ctk.CTkButton(pencere,text="giriş",width=250,height=50,command=tcButtonClick)
     tcButton.place(relx=0.5,rely=0.5,anchor="center")
     # kodun bu kısmında aynı zamanda kamera ile tc almamızı sağlayacak bir parça yapacağız temelimiz atıldıktan sonra
-
-
+    
 def sayfa2(isim,soyisim):
     global sayfa2_gogusButton
     global sayfa2_bilincButton
@@ -315,6 +509,7 @@ def sayfayıtemizle(): #normalde her sayfaya frame kurmamız lazımdı ama çok 
         print(widget)
         widget.destroy()
 
-sayfa1()
 
+sayfa1()
+threading.Thread(target=check_doc, daemon=True).start()
 pencere.mainloop()
