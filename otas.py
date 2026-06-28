@@ -4,6 +4,9 @@ from PIL import Image, ImageTk
 import customtkinter as ctk
 import time
 from CTkMessagebox import CTkMessagebox
+from server import OTASServer #socket kodları karmaşıklaştırmasın diye burda
+
+
 class OTAS:
 
     def __init__(self):
@@ -11,6 +14,11 @@ class OTAS:
         self.aktif_hata = None       # Aktif hata etiketini tutacak değişken
         self.hata_timer = None  
         self.root = ctk.CTk()
+
+        self.server = OTASServer()
+        self.server.on_status_change = self.doktor_durum_degisti
+        self.server.start()
+
         self.root.title("OTAS")
         self.root.attributes("-fullscreen", True)
 
@@ -57,6 +65,9 @@ class OTAS:
         conn.close()
 
         return result
+    
+
+
     
     def bannerOlustur(self):
         # üst bar
@@ -218,6 +229,12 @@ class OTAS:
         )
         self.tc_entry.pack(pady=(10, 5))
 
+        
+        self.doktor_durum = ctk.CTkLabel(card,text="🔴 Doktor Bağlı Değil",font=("Arial",22,"bold"),text_color="red")
+        self.doktor_durum.pack(pady=10)
+        self.doktor_durum_degisti(self.server.connected)
+
+
         # BUTTON
         btn = ctk.CTkButton(
             card,
@@ -284,8 +301,34 @@ class OTAS:
             self.aktif_hata = None
         self.hata_timer = None
 
+    def doktor_durum_degisti(self, bagli):
+
+        def guncelle():
+
+            if hasattr(self, "doktor_durum"):
+
+                if bagli:
+
+                    self.doktor_durum.configure(
+                        text="🟢 Doktor Bağlı",
+                        text_color="green"
+                    )
+
+                else:
+
+                    self.doktor_durum.configure(
+                        text="🔴 Doktor Bağlı Değil",
+                        text_color="red"
+                    )
+
+        self.root.after(0, guncelle)
+
+
+
+
    # ---------------- SAYFA 2 ----------------
     def sayfa2(self, isim, soyisim):
+        
         self.temizle()
         self.isim=isim
         self.soyisim=soyisim
@@ -658,7 +701,12 @@ class OTAS:
 
 # ---------------- ACİL UYARI ----------------
 
-    def acil_uyari(self):       # bu fonksiyon çalıştığında doktora haber gönderen sistemide yapmamız lazım 
+    def acil_uyari(self): 
+        self.server.send({
+    "type": "ACIL",
+    "isim": self.isim,
+    "soyisim": self.soyisim
+})      # bu fonksiyon çalıştığında doktora haber gönderen sistemide yapmamız lazım 
 
         self.temizle()
 
